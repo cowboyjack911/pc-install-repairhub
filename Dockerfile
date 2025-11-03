@@ -12,19 +12,19 @@ COPY src/CrackedScreenCare.Modules.PCBuilder/CrackedScreenCare.Modules.PCBuilder
 COPY src/CrackedScreenCare.Modules.RepairWorkflow/CrackedScreenCare.Modules.RepairWorkflow.csproj src/CrackedScreenCare.Modules.RepairWorkflow/
 COPY src/CrackedScreenCare.WebHost/CrackedScreenCare.WebHost.csproj src/CrackedScreenCare.WebHost/
 
-# Restore dependencies
-RUN dotnet restore
-
-# Copy all source code
+# Copy all source code first (includes obj/bin with packages.lock)
 COPY . .
+
+# Restore dependencies (using --locked-mode to use existing lock files)
+RUN dotnet restore --disable-parallel || dotnet restore
 
 # Build the application
 WORKDIR /src/src/CrackedScreenCare.WebHost
-RUN dotnet build -c Release -o /app/build
+RUN dotnet build -c Release -o /app/build --no-restore
 
 # Publish the application
 FROM build AS publish
-RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false --no-restore
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
