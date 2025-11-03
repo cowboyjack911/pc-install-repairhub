@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database service
+  postgres:
+    image: postgres:16-alpine
+    container_name: crackedscreencare-db
+    environment:
+      POSTGRES_DB: crackedscreencare
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ASP.NET Core application service
+  webapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crackedscreencare-app
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=crackedscreencare;Username=postgres;Password=postgres
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
